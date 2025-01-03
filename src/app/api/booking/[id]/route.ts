@@ -2,10 +2,13 @@ import { BookingModel } from "@/model/booking.model";
 import { connect } from "@/utils/utility";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+    req: NextRequest,
+    context: { params: { id: string } }
+) {
     await connect();
     try {
-        const id = params?.id;
+        const id = context.params.id;
         console.log(id);
 
         if (!id) {
