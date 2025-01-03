@@ -1,9 +1,8 @@
 import { BookingModel } from "@/model/booking.model";
 import { connect } from "@/utils/utility";
-import { NextApiRequest } from "next";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function DELETE(req: NextApiRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
     await connect();
     try {
         const id = params?.id;
