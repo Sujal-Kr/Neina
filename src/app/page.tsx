@@ -1,101 +1,188 @@
-import Image from "next/image";
+'use client'
+import { Calendar1Icon, MailIcon, PhoneCall, ShoppingCart, User2Icon, UsersRound } from 'lucide-react'
+import { useState } from 'react'
+import { SlotLoader } from '@/components/skeleton/Loader'
+import Button from '@/components/modal/Button'
+import axios from 'axios'
+import toast from 'react-hot-toast'
+import { BookingSchema, BookingType } from '@/types/Booking'
+import Booking from '@/components/modal/Booking'
+import { z } from 'zod'
+import { fromZodError } from 'zod-validation-error'
 
-export default function Home() {
+
+const Home = () => {
+
+  const [slots, setSlots] = useState<string[]>([])
+  const [slot, setSlot] = useState<string>("")
+  const [error, setError] = useState<string>("")
+  const [loading, setLoading] = useState<boolean>(false)
+  const [item, setItem] = useState({})
+  const [isModal, setIsModal] = useState(false)
+
+
+  const handleCloseModal = () => {
+    setIsModal(false)
+    setItem({})
+  }
+
+  const handleSlot = (item: string) => {
+    setSlot((prev) => prev === item ? "" : item)
+    setError("")
+  }
+  const handleAvailableSlots = async () => {
+    setLoading(true)
+    try {
+      const { data } = await axios.get('/api/slot')
+      console.log(data)
+      if (data.success) {
+        setSlots(data.slots)
+
+      }
+    } catch (err: any) {
+      console.log("Error", err.response?.data.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+  const handleModal = (booking: BookingType) => {
+    setItem(booking)
+    setIsModal(true)
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError("")
+    try {
+      
+      setLoading(true)
+      const formData = new FormData(e.target as HTMLFormElement)
+      
+
+      const booking={
+        name: formData.get('name'),
+        email: formData.get('email'),
+        guest: formData.get('guest') , 
+        contact: formData.get('contact') ,
+        date:new Date(formData.get('date') as string) ,
+        time:slot
+      }
+
+      const result = BookingSchema.safeParse(booking)
+      if (!result.success) {
+        const { message } = fromZodError(result.error).details[0]
+        setError(message)
+        setTimeout(() => setError(''), 10000)
+        return
+      }
+
+      const { data } = await axios.post('/api/booking', booking)
+      const form = e.target as HTMLFormElement
+      form.reset()
+      setSlot("")
+
+      if (data.success) {
+        handleModal(data.booking)
+        toast(data.message)
+      }
+
+
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className='min-h-dvh grid place-content-center '>
+      <div className='max-w-sm shadow-xl py-12 px-10 rounded-2xl'>
+        <h3 className='text-center text-xl py-4'>Booking | Restaurant</h3>
+        {error && <p className='text-xs text-red-600 text-center pb-2'>{error}</p>}
+        <div>
+          <form onSubmit={handleSubmit} className='flex flex-col gap-5'>
+            <div className='border-2 rounded-xl flex items-center gap-2 px-3 text-gray-500'>
+              <User2Icon size={20} />
+              <input
+                
+                type="text"
+                name='name'
+                className='text-sm w-full p-2 outline-none rounded-xl'
+                placeholder='Full Name'
+                aria-label='Full Name'
+              />
+            </div>
+            <div className='border-2 rounded-xl flex items-center gap-2 px-3 text-gray-500'>
+              <MailIcon size={20} />
+              <input
+                
+                type="email"
+                name='email'
+                className='text-sm w-full p-2 outline-none rounded-xl'
+                placeholder='Email Address'
+                aria-label='Email Address'
+              />
+            </div>
+            <div className='border-2 rounded-xl flex items-center gap-2 px-3 text-gray-500'>
+              <PhoneCall size={20} />
+              <input
+                
+                type="text"
+                name='contact'
+                className='text-sm w-full p-2 outline-none rounded-xl'
+                placeholder='Contact Number'
+                aria-label='Contact Number'
+              />
+            </div>
+            <div className='border-2 rounded-xl flex items-center gap-2 px-3 text-gray-500'>
+              <UsersRound size={20} />
+              <select  name='guest' className='p-2 outline-none w-full ' aria-label='Number of People'>
+                {/* <option value="">Select Number of People</option> */}
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+            </div>
+            <div className='border-2 rounded-xl flex items-center gap-2 px-3 text-gray-500'>
+              <Calendar1Icon size={20} />
+              <input
+                
+                type="date"
+                name='date'
+                onChange={handleAvailableSlots}
+                className='text-sm w-full p-2 outline-none rounded-xl'
+                aria-label='Booking Date'
+              />
+            </div>
+            <div>
+              <h6 className='text-xs text-gray-400 pb-4'>Available Slots</h6>
+              <div className='flex justify-start flex-wrap gap-2'>
+                {loading ? <SlotLoader /> : slots?.map((time, index) => (
+                  <div
+                    key={index}
+                    onClick={() => handleSlot(time)}
+                    className={`px-3 bg-green-100 py-1 text-green-600 rounded-full text-xs border-2 cursor-pointer ${slot === time ? "border-green-800" : "border-white"}`}
+                  >
+                    {time}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <button
+              type='submit'
+              className='bg-indigo-500 p-3 rounded-xl text-white hover:bg-white hover:text-indigo-600 border-2 border-indigo-600 transition-all duration-500 shadow-lg'
+              aria-label='Book Now'
+            >
+              {loading ? 'Booking...' : 'Book'}
+            </button>
+          </form>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+      {isModal && <Booking booking={item} handler={handleCloseModal} />}
+      <Button url='/bookings' icon={ShoppingCart} />
     </div>
-  );
+  )
 }
+
+export default Home
